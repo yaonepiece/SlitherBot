@@ -19,7 +19,7 @@ class ScreenCapturer():
 			self.outy=outy
 		
 		self.data_ready=False
-		self.screen_data=np.ndarray((4,outx,outy),dtype='uint8')
+		self.screen_data=np.ndarray((4,self.outx,self.outy),dtype='uint8')
 		self.screen_cnt=0
 	
 	def __crop_center(self,img,cropx,cropy):
@@ -52,7 +52,7 @@ class ScreenCapturer():
 if __name__ == '__main__':
 	t = time.time()
 	count = 0
-	scap=ScreenCapturer(480,540,512,512)
+	scap=ScreenCapturer(960,540,512,512)
 
 	while(True):
 		if(time.time() - t > 1):
@@ -66,5 +66,5 @@ if __name__ == '__main__':
 			cv2.destroyAllWindows()
 			break
 		count += 1
-		#print(select.poll())
+		# print(select.poll())
 	

@@ -2,6 +2,19 @@
 
 Implementation of reienforcement learning algorithm using [slither.io](http://slither.io/) game as example
 
+## Runtime Requirement:
+
+Python 3
+- mss
+- PIL
+- numpy
+- opencv
+- tensorflow 1.12.0
+
+```
+pip install mss PIL numpy tensorflow opencv-python
+```
+
 ## Custom Screen Capture API Document
 
 - Class: ScreenCapturer

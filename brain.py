@@ -58,13 +58,13 @@ def main():
     print('[DEBUG] Building network')
     brain = DuelingDQN(1)
     data = ScreenCapturer(960, 540, 64, 64)
-    game = SlitherChromeController()
+    game = SlitherChromeController('localhost', 8765)
 
     n_round = 1000
 
     # TODO: get four frame from screen
     print('[DEBUG] Getting initial frames')
-    for i in range(4):
+    while not data.data_ready:
         image = data.get_gray()
         data.save_pic(image)
 
@@ -74,15 +74,15 @@ def main():
     print(f'[DEBUG] Start training... Total round = {n_round}')
     while n_round:
         action = brain.choose_action(state)
-        reward = game.perform(action)
+        reward = game.turn(action)
         brain.learn(action, state, reward)
 
         if n_round % 50 == 0:
             print(f'Epoch {n_round} completed, loss={loss_}')
 
-        state[0:2] = state[2:4]
-        state[2] = data.get_gray()
-        state[3] = data.get_gray()
+        frame = data.get_gray()
+        data.save_pic(frame)
+
         n_round -= 1
 
     # TODO: plot the result (loss graph)

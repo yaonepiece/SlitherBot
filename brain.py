@@ -65,10 +65,9 @@ def main():
     # TODO: get four frame from screen
     print('[DEBUG] Getting initial frames')
     while not data.data_ready:
-        image = data.get_gray()
-        data.save_pic(image)
+        data.save_pic()
 
-    state = data.screen_data
+    state = data.get_batch()
 
     # TODO: train the network
     print(f'[DEBUG] Start training... Total round = {n_round}')

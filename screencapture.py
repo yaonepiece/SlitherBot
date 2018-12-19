@@ -31,13 +31,16 @@ class ScreenCapturer:
         print(im.shape)
         return im
 
-    def save_pic(self, screen):
-        self.screen_data[self.screen_cnt] = screen
-        self.screen_cnt += 1
+    def save_pic(self):
+        self.screen_data[:-1] = self.screen_data[1:]
+        self.screen_data[-1] = self.get_gray()
+        if self.screen_cnt < self.stack_size:
+            self.screen_cnt += 1
         if self.screen_cnt == self.stack_size:
-            self.screen_cnt = 0
             self.data_ready = True
 
+    def get_batch(self):
+        return self.screen_data
 
 def main():
     t = time.time()
@@ -46,7 +49,7 @@ def main():
 
     while True:
         if (time.time() - t) > 1:
-            os.system("cls")
+            os.system("clear")
             print(count)
             t = time.time()
             count = 0

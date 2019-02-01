@@ -8,6 +8,9 @@ import cv2, os, time, select
 scap=sc.ScreenCapturer(960,540,64,64)
 round = 1000
 
+#TODO: change some dense layers into CNN
+#      put the function within a class called Brain,
+#      and complete the whole class
 
 def network(x):
     linear = tf.layers.flatten(x)

@@ -52,7 +52,7 @@ class ScreenCapturer():
 if __name__ == '__main__':
 	t = time.time()
 	count = 0
-	scap=ScreenCapturer(960,540,512,512)
+	scap=ScreenCapturer(960,540,64,64)
 
 	while(True):
 		if(time.time() - t > 1):

@@ -1,6 +1,6 @@
+import random
 import numpy as np
 import tensorflow as tf
-
 
 class DuelingDQN:
     def __init__(
@@ -17,22 +17,23 @@ class DuelingDQN:
         self.n_actions = n_actions
         self.lr = learning_rate
         self.gamma = reward_decay
-        self.epsilon_max = e_greedy
         self.replace_target_itr = replace_target_itr
         self.batch_size = batch_size
         self.epsilon_increment = e_greedy_increment
-        self.epsilon = 0 if e_greedy_increment is not None else self.epsilon_max
+        self.epsilon = 1 if e_greedy_increment is None else e_greedy
         self.q_target = tf.placeholder(tf.float16, [n_actions], 'Q_Target')
         
         # Brain Setup
         self.sess = tf.Session()
         self._build_net()
+        self.sess.run(tf.initializers.global_variables())
         
         # Action Memory
         self.mem_size=0
         self.state_mem=[]
         #self.reward_mem=[]
         self.last_reward=None
+        self.last_action=None
         self.q_mem=[]
 
     def _build_net(self):
@@ -51,14 +52,31 @@ class DuelingDQN:
             self.q_eval = tf.layers.dense(denc1, self.n_actions)
         with tf.name_scope("Loss"):
             self.loss = tf.losses.mean_squared_error(labels=self.q_target, predictions=self.q_eval)
-        with tf.variable_scope('Train'):
+        with tf.name_scope('Train'):
             self.train = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
     def choose_action(self, state):
-        return self.sess.run(self.q_eval, {self.state: state})
+        if random.random()<self.epsilon:
+            values=self.sess.run(self.q_eval, {self.state: state}).ravel()
+            return np.amax(values)
+        else:
+            return random.randrange(self.n_actions)
 
-    def learn(self, action, state, reward):
-        pass
+    def learn(self, action, before_state, after_state, reward):
+        prediction=self.sess.run(self.q_eval, {self.state: before_state}).ravel()
+        pred_next=self.sess.run(self.q_eval, {self.state: after_state}).ravel()
+        prediction[action]=self.gamma*np.max(pred_next)+reward
+        self.state_mem.append(before_state)
+        self.q_mem.append(prediction)
+        self.mem_size+=1
+        if self.mem_size>self.batch_size:
+            self.state_mem=[-self.batch_size:]
+            self.q_mem=[-self.batch_size:]
+            self.mem_size=self.batch_size
+        if self.mem_size==self.batch_size:
+            self.sess.run(self.train, {self.state: self.state_mem, self.q_target: self.q_mem})
+            if self.epsilon < 1 and self.epsilon_increment is not None:
+                self.epsilon+=self.epsilon_increment
 
 
 def main():

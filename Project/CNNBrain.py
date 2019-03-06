@@ -43,7 +43,6 @@ class DuelingDQN:
         self.q_mem=[]
 
     def _build_net(self):
-        # state size is formate the format of NHWC where channel is 4 x frames
         # 2/10: Can't find a structure of Dueling Q Net
         self.state = tf.placeholder(tf.float16, [self.batch_size, 128, 128, 4])
         with tf.variable_scope('eval_net'):
@@ -102,14 +101,13 @@ class DuelingDQN:
     def update_network(self):
         self.sess.run(self.replace_op)
 
-# TODO: revise the main function to fit the 2-action sense
 def main():
     from gamecontrol import SlitherChromeController
     from screencapture import ScreenCapturer
 
     print('[DEBUG] Building network')
     brain = DuelingDQN(1)
-    data = ScreenCapturer(960, 540, 64, 64)
+    data = ScreenCapturer(960, 540, 128, 128)
     game = SlitherChromeController('localhost', 8765)
 
     n_round = 1000

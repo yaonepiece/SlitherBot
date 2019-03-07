@@ -43,6 +43,7 @@ class DuelingDQN:
         self.q_mem=[]
 
     def _build_net(self):
+        # state size is formatted in NHWC
         # 2/10: Can't find a structure of Dueling Q Net
         self.state = tf.placeholder(tf.float16, [self.batch_size, 128, 128, 4])
         with tf.variable_scope('eval_net'):
@@ -83,9 +84,14 @@ class DuelingDQN:
 
     def learn(self, action, before_state, after_state, reward):
         prediction=self.sess.run(self.q_target, {self.state: before_state}).ravel()
-        pred_next=self.sess.run(self.q_target, {self.state: after_state}).ravel()
-        #prediction[action]=self.gamma*np.max(pred_next)+reward # Q-Learning
-        prediction[action]=self.gamma*np.random.choice(pred_next)+reward # Sarsa
+        if not after_state == None:
+            pred_next=self.sess.run(self.q_target, {self.state: after_state}).ravel()
+            # Q-Learning
+            # prediction[action]=self.gamma*np.max(pred_next)+reward
+            # Sarsa
+            prediction[action]=self.gamma*np.random.choice(pred_next)+reward
+        else:
+            prediction[action]=reward
         self.state_mem.append(before_state)
         self.q_mem.append(prediction)
         self.mem_size+=1
@@ -102,46 +108,61 @@ class DuelingDQN:
         self.sess.run(self.replace_op)
 
 def main():
-    from gamecontrol import SlitherChromeController
-    from screencapture import ScreenCapturer
+    import threading
+    import time
+    import gameControl
+    from screenCapture import ScreenCapturer
 
     print('[DEBUG] Building network')
-    brain = DuelingDQN(1)
-    data = ScreenCapturer(960, 540, 128, 128)
-    game = SlitherChromeController('localhost', 8765)
+    brain = DuelingDQN(2)
+    # modify the crop rect to the center of the game screen
+    # first 2 numbers are the center pixel of the image
+    # following 2 numbers are the size of the rect to be cropped
+    # last 2 numbers are the actual image output size, should be left as (128,128)
+    data = ScreenCapturer(480, 540, 256, 256, outx=128, outy=128)
+    gameserver = threading.Thread(target=gameControl.init())
 
     n_round = 1000
-
-    # TODO: get four frame from screen
-    print('[DEBUG] Getting initial frames')
-    while not data.data_ready:
-        data.save_pic(data.get_gray())
-
-    state = data.screen_data
-
-    # TODO: train the network
-    print(f'[DEBUG] Start training... Total round = {n_round}')
-    while n_round:
-        action = brain.choose_action(state)
-        reward = game.turn(action)
-        brain.learn(action, state, reward)
-
-        if n_round % 50 == 0:
-            print(f'Epoch {n_round} completed, loss={loss_}')
-
-        frame = data.get_gray()
-        data.save_pic(frame)
-
-        n_round -= 1
-
+    update_round = 1
+    log_round = 10
+    
+    for i in range(1,n_round+1):
+        while gameControl.status==0:
+            pass
+        
+        # get four frame from screen
+        print('[DEBUG] Getting initial frames')
+        while not data.data_ready:
+            data.save_pic(data.get_gray())
+        before_state = data.screen_data
+        before_score = gameControl.score
+        
+        while True:
+            action = brain.choose_action(before_state)
+            gameControl.action = action
+            # time.sleep(0.1)
+            
+            data.save_pic(data.get_gray())
+            after_state = data.screen_data
+            after_score = gameControl.score
+            if not gameControl.status==0:
+                brain.learn(action, before_state, after_state, (after_score-before_score)/10)
+            else:
+                brain.learn(action, before_state, None, -before_score/10)
+                break
+            
+            before_state = after_state
+            before_score = after_score
+        
+        if i % update_round == 0:
+            brain.update_network()
+        if i % log_round == 0:
+            print(f'[ LOG ] Round {i} completed, score = {before_score}')
+        
+        data.clear()
+        
     # TODO: plot the result (loss graph)
     print('[DEBUG] Train complete')
-
-    # TODO: continue playing
-    while True:
-        angle = brain.choose_action(state)
-        game.turn(angle)
-
 
 if __name__ == "__main__":
     main()

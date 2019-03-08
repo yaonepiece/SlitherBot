@@ -24,7 +24,7 @@ class DuelingDQN:
         
         # Brain Setup
         self.sess = tf.Session()
-        self.q_real = tf.placeholder(tf.float16, [n_actions], 'Q_Real')
+        self.q_real = tf.placeholder(tf.float16, [self.batch_size, n_actions], 'Q_Real')
         self._build_net()
         # self.state: game screen input, shape=[self.batch_size, 128, 128, 4]
         # self.target_net: network for action, feed_dict={self.state: self.state_mem}
@@ -115,13 +115,16 @@ def main():
 
     print(' [LOG]  Creating environment...')
     brain = DuelingDQN(2)
+    print(' [LOG]  Network created.')
     # modify the crop rect to the center of the game screen
     # first 2 numbers are the center pixel of the image
     # following 2 numbers are the size of the rect to be cropped
     # last 2 numbers are the actual image output size, should be left as (128,128)
     data = ScreenCapturer(480, 540, 256, 256, outx=128, outy=128)
-    gameserver = threading.Thread(target=gameControl.init()).start()
-    print(' [LOG]  Environment created, waiting for the slither.')
+    print(' [LOG]  Screen capturer created.')
+    gameserver = threading.Thread(target=gameControl.main(), daemon=True)
+    gameserver.start()
+    print(' [LOG]  Server created, waiting for the slither.')
 
     n_round = 1000
     update_round = 1

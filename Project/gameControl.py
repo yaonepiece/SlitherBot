@@ -31,9 +31,9 @@ class slitherIO(WebSocket):
     def handleClose(self):
         pass
 
-def init():
+def main():
     server.setUp(slitherIO)
 
 if __name__=='__main__':
-    init()
+    main()
     

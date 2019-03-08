@@ -15,9 +15,13 @@ class slitherIO(WebSocket):
         if self.data=='stopped':
             status=0
             score=0
+            print('[SERVE] The game has ended.')
         else:
+            if status==0:
+                print('[SERVE] The game has started.')
             status=1
             score=int(self.data)
+            #action=random.randrange(2)
             self.sendMessage(f'{action}')
 
     def handleConnected(self):

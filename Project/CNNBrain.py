@@ -48,9 +48,9 @@ class DuelingDQN:
         self.state = tf.placeholder(tf.float16, [self.batch_size, 128, 128, 4])
         with tf.variable_scope('eval_net'):
             with tf.name_scope('Conv2D'):
-                conv0 = tf.keras.layers.conv2d(input=self.state, filters=16, strides=4, kernel_size=8, activation=tf.nn.relu)
-                conv1 = tf.keras.layers.conv2d(input=conv0, filters=32, strides=2, kernel_size=4, activation=tf.nn.relu)
-                conv2 = tf.keras.layers.conv2d(input=conv1, filters=64, strides=1, kernel_size=2, activation=tf.nn.relu)
+                conv0 = tf.layers.conv2d(self.state, filters=16, strides=4, kernel_size=8, activation=tf.nn.relu)
+                conv1 = tf.layers.conv2d(conv0, filters=32, strides=2, kernel_size=4, activation=tf.nn.relu)
+                conv2 = tf.layers.conv2d(conv1, filters=64, strides=1, kernel_size=2, activation=tf.nn.relu)
                 conv3 = tf.layers.flatten(conv2)
             with tf.name_scope('Dense'):
                 denc0 = tf.layers.dense(conv3, 256)
@@ -58,9 +58,9 @@ class DuelingDQN:
                 self.q_eval = tf.layers.dense(denc1, self.n_actions)
         with tf.variable_scope('target_net'):
             with tf.name_scope('Conv2D'):
-                conv0 = tf.keras.layers.conv2d(input=self.state, filters=16, strides=4, kernel_size=8, activation=tf.nn.relu)
-                conv1 = tf.keras.layers.conv2d(input=conv0, filters=32, strides=2, kernel_size=4, activation=tf.nn.relu)
-                conv2 = tf.keras.layers.conv2d(input=conv1, filters=64, strides=1, kernel_size=2, activation=tf.nn.relu)
+                conv0 = tf.layers.conv2d(self.state, filters=16, strides=4, kernel_size=8, activation=tf.nn.relu)
+                conv1 = tf.layers.conv2d(conv0, filters=32, strides=2, kernel_size=4, activation=tf.nn.relu)
+                conv2 = tf.layers.conv2d(conv1, filters=64, strides=1, kernel_size=2, activation=tf.nn.relu)
                 conv3 = tf.layers.flatten(conv2)
             with tf.name_scope('Dense'):
                 denc0 = tf.layers.dense(conv3, 256)
@@ -71,7 +71,7 @@ class DuelingDQN:
         with tf.name_scope('Train'):
             self.train = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
         t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
-		e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
+        e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
         with tf.name_scope('Replace'):
             self.replace_op = [tf.assign(t,e) for t,e in zip(t_params,e_params)]
 
@@ -96,8 +96,8 @@ class DuelingDQN:
         self.q_mem.append(prediction)
         self.mem_size+=1
         if self.mem_size>self.batch_size:
-            self.state_mem=[-self.batch_size:]
-            self.q_mem=[-self.batch_size:]
+            self.state_mem=self.state_mem[-self.batch_size:]
+            self.q_mem=self.q_mem[-self.batch_size:]
             self.mem_size=self.batch_size
         if self.mem_size==self.batch_size:
             self.sess.run(self.train, {self.state: self.state_mem, self.q_target: self.q_real})
@@ -113,14 +113,15 @@ def main():
     import gameControl
     from screenCapture import ScreenCapturer
 
-    print('[DEBUG] Building network')
+    print(' [LOG]  Creating environment...')
     brain = DuelingDQN(2)
     # modify the crop rect to the center of the game screen
     # first 2 numbers are the center pixel of the image
     # following 2 numbers are the size of the rect to be cropped
     # last 2 numbers are the actual image output size, should be left as (128,128)
     data = ScreenCapturer(480, 540, 256, 256, outx=128, outy=128)
-    gameserver = threading.Thread(target=gameControl.init())
+    gameserver = threading.Thread(target=gameControl.init()).start()
+    print(' [LOG]  Environment created, waiting for the slither.')
 
     n_round = 1000
     update_round = 1
@@ -131,7 +132,7 @@ def main():
             pass
         
         # get four frame from screen
-        print('[DEBUG] Getting initial frames')
+        print(' [LOG]  Training started, getting initial frames...')
         while not data.data_ready:
             data.save_pic(data.get_gray())
         before_state = data.screen_data
@@ -155,14 +156,16 @@ def main():
             before_score = after_score
         
         if i % update_round == 0:
+            print(' [LOG]  Updating the network...')
             brain.update_network()
+            print(' [LOG]  Update finished.')
         if i % log_round == 0:
-            print(f'[ LOG ] Round {i} completed, score = {before_score}')
+            print(f' [LOG]  Round {i} completed, score = {before_score}')
         
         data.clear()
         
     # TODO: plot the result (loss graph)
-    print('[DEBUG] Train complete')
+    print(' [LOG]  Train complete')
 
 if __name__ == "__main__":
     main()

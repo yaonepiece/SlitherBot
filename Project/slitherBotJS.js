@@ -1,30 +1,37 @@
 var ws_me = new WebSocket("ws://127.0.0.1:32768/");
-var sbtn = document.getElementById(playh).children[0];
-var temp,temp2;
+var sbtn;
+var temp,temp2,astart;
 ws_me.onmessage = function(e)
 {
 	window.clearInterval(temp);
 	window.clearInterval(temp2);
 	temp = setTimeout(()=>
 	{
-		if(typeof(fpsls)!='undefined' && typeof(snake)!='undefined' && typeof(fmlts)!='undefined' && typeof(snake.sct)!='undefined')
+		if(typeof(fpsls)!='undefined' && typeof(snake)!='undefined' && snake!=null && typeof(fmlts)!='undefined')
 		{
 			ws_me.send(Math.floor(15 * (fpsls[snake.sct] + snake.fam / fmlts[snake.sct] - 1) - 5) / 1);
 		}else if(e.data == "start"){
-			setTimeout(()=>{
-				sbtn.onclick();
-				setTimeout(()=>{
-					ws_me.send(Math.floor(15 * (fpsls[snake.sct] + snake.fam / fmlts[snake.sct] - 1) - 5) / 1);
-				},1500);
-			},5000);
+			if(!astart){
+				astart=setTimeout(()=>{
+					sbtn = document.getElementById("playh").children[0];
+					sbtn.onclick();
+					setTimeout(()=>{
+						ws_me.send(Math.floor(15 * (fpsls[snake.sct] + snake.fam / fmlts[snake.sct] - 1) - 5) / 1);
+					},1500);
+					astart=undefined;
+				},5000);
+			}
 		}else{
 			ws_me.send("stopped");
-			setTimeout(()=>{
-				sbtn.onclick();
-				setTimeout(()=>{
-					ws_me.send(Math.floor(15 * (fpsls[snake.sct] + snake.fam / fmlts[snake.sct] - 1) - 5) / 1);
-				},1500);
-			},10000);
+			if(!astart){
+				astart=setTimeout(()=>{
+					sbtn.onclick();
+					setTimeout(()=>{
+						ws_me.send(Math.floor(15 * (fpsls[snake.sct] + snake.fam / fmlts[snake.sct] - 1) - 5) / 1);
+					},1500);
+					astart=undefined;
+				},10000);
+			}
 		}
 		//console.log(e.data);
 	},10);
@@ -45,6 +52,4 @@ ws_me.onmessage = function(e)
 			//console.log(Math.atan2(ym,xm) + " " + xm + " "+ ym);
 		}
 	},10);
-	
-	
 }

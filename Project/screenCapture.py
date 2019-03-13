@@ -38,10 +38,10 @@ class ScreenCapturer:
         return im
 
     def save_pic(self, screen):
-        if len(self.screen_cnt) == self.stack_size:
+        if len(self.screen_data) == self.stack_size:
             self.screen_data = self.screen_data[1:]
         self.screen_data = np.append(self.screen_data, [screen], axis=0)
-        if self.screen_cnt == self.stack_size:
+        if len(self.screen_data) == self.stack_size:
             self.data_ready = True
     
     def clear(self):

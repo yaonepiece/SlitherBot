@@ -1,5 +1,5 @@
 import server
-import random
+#import random
 from SimpleWebSocketServer import WebSocket, SimpleWebSocketServer, SimpleSSLWebSocketServer
 
 status=0

@@ -42,12 +42,12 @@ ws_me.onmessage = function(e)
 		{
 			if(e.data =='0')
 			{
-				xm = Math.cos(Math.atan2(ym,xm)-0.4)*100;
-				ym = Math.sin(Math.atan2(ym,xm)-0.4)*100;
+				xm = Math.cos(Math.atan2(ym,xm)-0.3)*100;
+				ym = Math.sin(Math.atan2(ym,xm)-0.3)*100;
 			}else
 			{
-				xm = Math.cos(Math.atan2(ym,xm)+0.4)*100;
-				ym = Math.sin(Math.atan2(ym,xm)+0.4)*100;
+				xm = Math.cos(Math.atan2(ym,xm)+0.3)*100;
+				ym = Math.sin(Math.atan2(ym,xm)+0.3)*100;
 			}
 			//console.log(Math.atan2(ym,xm) + " " + xm + " "+ ym);
 		}

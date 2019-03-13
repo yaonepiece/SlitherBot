@@ -1,6 +1,8 @@
 import random
 import numpy as np
 import tensorflow as tf
+from screenCapture import ScreenCapturer
+import gameControl
 
 class DuelingDQN:
     def __init__(
@@ -24,7 +26,7 @@ class DuelingDQN:
         
         # Brain Setup
         self.sess = tf.Session()
-        self.q_real = tf.placeholder(tf.float16, [self.batch_size, n_actions], 'Q_Real')
+        self.q_real = tf.placeholder(tf.float16, [None, n_actions], 'Q_Real')
         self._build_net()
         # self.state: game screen input, shape=[self.batch_size, 128, 128, 4]
         # self.target_net: network for action, feed_dict={self.state: self.state_mem}
@@ -45,7 +47,7 @@ class DuelingDQN:
     def _build_net(self):
         # state size is formatted in NHWC
         # 2/10: Can't find a structure of Dueling Q Net
-        self.state = tf.placeholder(tf.float16, [self.batch_size, 128, 128, 4])
+        self.state = tf.placeholder(tf.float16, [None, 128, 128, 4])
         with tf.variable_scope('eval_net'):
             with tf.name_scope('Conv2D'):
                 conv0 = tf.layers.conv2d(self.state, filters=16, strides=4, kernel_size=8, activation=tf.nn.relu)
@@ -77,15 +79,15 @@ class DuelingDQN:
 
     def choose_action(self, state):
         if self.epsilon>=1 or random.random()<self.epsilon:
-            values=self.sess.run(self.q_target, {self.state: state}).ravel()
-            return np.amax(values)
+            values=self.sess.run(self.q_target, {self.state: [state]}).ravel()
+            return np.argmax(values)
         else:
             return random.randrange(self.n_actions)
 
     def learn(self, action, before_state, after_state, reward):
-        prediction=self.sess.run(self.q_target, {self.state: before_state}).ravel()
-        if not after_state == None:
-            pred_next=self.sess.run(self.q_target, {self.state: after_state}).ravel()
+        prediction=self.sess.run(self.q_target, {self.state: [before_state]}).ravel()
+        if after_state is not None:
+            pred_next=self.sess.run(self.q_target, {self.state: [after_state]}).ravel()
             # Q-Learning
             # prediction[action]=self.gamma*np.max(pred_next)+reward
             # Sarsa
@@ -100,32 +102,14 @@ class DuelingDQN:
             self.q_mem=self.q_mem[-self.batch_size:]
             self.mem_size=self.batch_size
         if self.mem_size==self.batch_size:
-            self.sess.run(self.train, {self.state: self.state_mem, self.q_target: self.q_real})
+            self.sess.run(self.train, {self.state: self.state_mem, self.q_real: self.q_mem})
             if self.epsilon < 1 and self.epsilon_increment is not None:
                 self.epsilon+=self.epsilon_increment
     
     def update_network(self):
         self.sess.run(self.replace_op)
 
-def main():
-    import threading
-    import time
-    import gameControl
-    from screenCapture import ScreenCapturer
-
-    print(' [LOG]  Creating environment...')
-    brain = DuelingDQN(2)
-    print(' [LOG]  Network created.')
-    # modify the crop rect to the center of the game screen
-    # first 2 numbers are the center pixel of the image
-    # following 2 numbers are the size of the rect to be cropped
-    # last 2 numbers are the actual image output size, should be left as (128,128)
-    data = ScreenCapturer(480, 540, 256, 256, outx=128, outy=128)
-    print(' [LOG]  Screen capturer created.')
-    gameserver = threading.Thread(target=gameControl.main(), daemon=True)
-    gameserver.start()
-    print(' [LOG]  Server created, waiting for the slither.')
-
+def play(brain, data):
     n_round = 1000
     update_round = 1
     log_round = 10
@@ -138,7 +122,7 @@ def main():
         print(' [LOG]  Training started, getting initial frames...')
         while not data.data_ready:
             data.save_pic(data.get_gray())
-        before_state = data.screen_data
+        before_state = np.transpose(data.screen_data,axes=(1,2,0))
         before_score = gameControl.score
         
         while True:
@@ -147,7 +131,7 @@ def main():
             # time.sleep(0.1)
             
             data.save_pic(data.get_gray())
-            after_state = data.screen_data
+            after_state = np.transpose(data.screen_data,axes=(1,2,0))
             after_score = gameControl.score
             if not gameControl.status==0:
                 brain.learn(action, before_state, after_state, (after_score-before_score)/10)
@@ -169,6 +153,24 @@ def main():
         
     # TODO: plot the result (loss graph)
     print(' [LOG]  Train complete')
+
+def main():
+    import threading
+    import time
+
+    print(' [LOG]  Creating environment...')
+    brain = DuelingDQN(2)
+    print(' [LOG]  Network created.')
+    # modify the crop rect to the center of the game screen
+    # first 2 numbers are the center pixel of the image
+    # following 2 numbers are the size of the rect to be cropped
+    # last 2 numbers are the actual image output size, should be left as (128,128)
+    data = ScreenCapturer(480, 540, 256, 256, outx=128, outy=128)
+    print(' [LOG]  Screen capturer created.')
+    player = threading.Thread(target=play,args=(brain, data))
+    player.start()
+    print(' [LOG]  Server created, waiting for the slither.')
+    gameControl.main()
 
 if __name__ == "__main__":
     main()

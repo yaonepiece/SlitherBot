@@ -4,7 +4,7 @@ import tensorflow as tf
 from screenCapture import ScreenCapturer
 import gameControl
 
-class DuelingDQN:
+class DQNBrain:
     def __init__(
             self,
             n_actions,
@@ -46,7 +46,6 @@ class DuelingDQN:
 
     def _build_net(self):
         # state size is formatted in NHWC
-        # 2/10: Can't find a structure of Dueling Q Net
         self.state = tf.placeholder(tf.float16, [None, 128, 128, 4])
         with tf.variable_scope('eval_net'):
             with tf.name_scope('Conv2D'):
@@ -159,7 +158,7 @@ def main():
     import time
 
     print(' [LOG]  Creating environment...')
-    brain = DuelingDQN(2)
+    brain = DQNBrain(2)
     print(' [LOG]  Network created.')
     # modify the crop rect to the center of the game screen
     # first 2 numbers are the center pixel of the image

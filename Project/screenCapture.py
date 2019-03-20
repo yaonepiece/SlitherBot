@@ -52,7 +52,7 @@ class ScreenCapturer:
 def main():
     t = time.time()
     count = 0
-    scap = ScreenCapturer(960, 512, 1024, 512, 256, 128)
+    scap = ScreenCapturer(480, 600, 512, 512)
 
     while True:
         if (time.time() - t) > 1:

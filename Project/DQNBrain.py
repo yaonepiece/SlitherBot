@@ -90,9 +90,7 @@ class DQNBrain:
             # Q-Learning
             # prediction[action]=self.gamma*np.max(pred_next)+reward
             # Sarsa
-            # prediction[action]=self.gamma*np.random.choice(pred_next)+reward
-            # Assume the nature action is to continue the previous action
-            prediction[action]=self.gamma*pred_next[action]+reward
+            prediction[action]=self.gamma*np.random.choice(pred_next)+reward
         else:
             prediction[action]=reward
         self.state_mem.append(before_state)
@@ -160,7 +158,7 @@ def main():
     import time
 
     print(' [LOG]  Creating environment...')
-    brain = DQNBrain(n_actions=4)
+    brain = DQNBrain(2)
     print(' [LOG]  Network created.')
     # modify the crop rect to the center of the game screen
     # first 2 numbers are the center pixel of the image
